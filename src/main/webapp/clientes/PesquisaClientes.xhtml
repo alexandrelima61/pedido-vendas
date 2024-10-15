@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<ui:composition template="/WEB-INF/template/LayoutPadrao.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui">
+
+    <ui:define name="titulo">Pesquisa clientes</ui:define>
+
+    <ui:define name="corpo">
+        <h:form id="frmPesqUser">
+            <h1>Pesquisa clientes</h1>
+
+            <p:toolbar style="margin-top: 20px">
+                <p:toolbarGroup>
+                    <p:commandButton value="Pesquisar" icon="ui-icon-search" update="@form"
+                                     action="#{pesquisaClientesBean.pesquisar()}" />
+                </p:toolbarGroup>
+                <p:toolbarGroup align="right">
+                    <p:button value="Novo" outcome="/clientes/CadastroCliente"
+                              icon="ui-icon-circle-plus"
+                              disabled="#{not seguranca.excluirClientePermitido}"/>
+                </p:toolbarGroup>
+            </p:toolbar>
+
+            <p:panelGrid columns="2" id="painel" style="width: 100%; margin-top: 20px"
+                         columnClasses="rotulo, campo">
+
+                <p:outputLabel value="Tipo" for="tipo" />
+                <h:panelGroup>
+                    <p:selectOneRadio id="tipo" value="#{pesquisaClientesBean.tipo}">
+                        <f:selectItem itemLabel="Física" itemValue="1" />
+                        <f:selectItem itemLabel="Jurídica" itemValue="2" />
+                        <p:ajax listener="#{pesquisaClientesBean.defineTipoClienteP}" update="tipoDoc cnpjcpfm" 
+                                event="change" />
+                    </p:selectOneRadio>
+                </h:panelGroup>
+
+                <p:outputLabel id="tipoDoc" value="#{pesquisaClientesBean.cnpjcpf}" for="cnpjcpfm" />
+                <p:inputMask id="cnpjcpfm" value="#{pesquisaClientesBean.filter.documentoReceitaFederal}" 
+                             mask="#{pesquisaClientesBean.mascara}" /> 
+
+                <p:outputLabel value="Nome" for="nome"/>
+                <p:inputText id="nome" size="60"
+                             value="#{pesquisaClientesBean.filter.nome}"/>
+
+            </p:panelGrid>
+
+            <p:dataTable id="clienteTable" value="#{pesquisaClientesBean.cleintesFiltrados}" var="cliente"
+                         style="margin-top: 20px" emptyMessage="Nenhum produto encontrado." rows="15"
+                         paginator="true" paginatorAlwaysVisible="false" paginatorPosition="bottom">
+
+                <p:column headerText="Nome" style="text-align: left; width: 75%">
+                    <h:outputText value="#{cliente.nome}" />
+                </p:column>
+                <p:column headerText="Tipo" style="text-align: center; width: 40px">
+                    <h:outputText value="#{cliente.tipo}" />
+                </p:column>
+                <p:column headerText="CPF/CNPJ">
+                    <h:outputText value="#{cliente.documentoReceitaFederal}"/>
+                </p:column>
+                <p:column style="width: 100px; text-align: center">
+                    <p:button icon="ui-icon-pencil" title="Editar" 
+                              outcome="/clientes/CadastroCliente">
+                        <f:param name="cliente" value="#{cliente.id}" />
+                    </p:button>
+
+                    <p:commandButton icon="ui-icon-trash" title="Excluir" oncomplete="confirmacaoExclusaoCli.show()"
+                                     disabled="#{not seguranca.excluirClientePermitido}">
+                        <f:setPropertyActionListener target="#{pesquisaClientesBean.clienteSelecionado}" 
+                                                     value="#{cliente}" />
+                    </p:commandButton>
+                </p:column>
+            </p:dataTable>
+
+            <p:confirmDialog header="Exclusão de produto" 
+                             message="Tem certeza que deseja excluir o cliente #{pesquisaClientesBean.clienteSelecionado.nome}?"
+                             widgetVar="confirmacaoExclusaoCli">
+                <p:button value="Não" onclick="confirmacaoExclusaoCli.hide();
+                        return false;" />
+                <p:commandButton value="Sim" oncomplete="confirmacaoExclusaoCli.hide();"
+                                 action="#{pesquisaClientesBean.excluirCliente}"
+                                 process="@this" update=":frmPesqUser:clienteTable"/>
+            </p:confirmDialog>
+        </h:form>
+    </ui:define>
+</ui:composition>

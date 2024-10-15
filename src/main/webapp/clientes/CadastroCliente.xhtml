@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<ui:composition template="/WEB-INF/template/LayoutPadrao.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:o="http://omnifaces.org/ui">
+    <script>
+        function tratarInclusaoEndereco(args) {
+
+            if (!args.validationFailed) {
+                inclusaoEnderecoDialog.hide();
+            }
+        }
+    </script>
+
+    <f:metadata>
+        <o:viewParam name="cliente" value="#{cadastroClienteBean.cliente}" />
+        <f:event listener="#{cadastroClienteBean.inicializarCliente}" type="preRenderView" />
+    </f:metadata>
+
+    <ui:define name="titulo">#{cadastroClienteBean.editando ? 'Edição de cliente' : 'Novo cliente'}</ui:define>
+
+    <ui:define name="corpo">
+
+        <h1>#{cadastroClienteBean.editando ? 'Edição de cliente' : 'Novo cliente'}</h1>
+
+        <h:form id="frmCliente">
+
+            <p:messages autoUpdate="true" closable="true" />
+
+            <p:toolbar styleClass="toolbar" style="margin-top: 20px">
+                <p:toolbarGroup>
+                    <p:button value="Novo" outcome="/clientes/CadastroCliente" 
+                              icon="ui-icon-circle-plus"
+                              disabled="#{not seguranca.excluirClientePermitido}"/>
+                    <p:commandButton value="Salvar" id="botaoSalvar" icon="ui-icon-disk"
+                                     action="#{cadastroClienteBean.salvar()}" process="@this, painelCadClient"
+                                     update=":frmCliente:painelCadClient :frmCliente:enderecosTable"
+                                     disabled="#{not seguranca.cadastrarClientePermitido}"/>
+                </p:toolbarGroup>
+                <p:toolbarGroup align="right">
+                    <p:button value="Pesquisa" outcome="/clientes/PesquisaClientes" 
+                              icon="ui-icon-search"/>
+                </p:toolbarGroup>
+            </p:toolbar>
+
+            <p:panelGrid columns="2" id="painelCadClient" styleClass="painel"
+                         style="margin-top: 20px" columnClasses="rotulo, campo">
+                <p:outputLabel value="Nome" for="nome" />
+                <p:inputText id="nome" size="60" maxlength="80" 
+                             value="#{cadastroClienteBean.cliente.nome}"/>
+
+                <p:outputLabel value="Tipo" for="tipo" />
+                <h:panelGroup>
+                    <p:selectOneRadio id="tipo" value="#{cadastroClienteBean.tipo}">
+                        <f:selectItem itemLabel="Física" itemValue="1" />
+                        <f:selectItem itemLabel="Jurídica" itemValue="2" />
+                        <p:ajax listener="#{cadastroClienteBean.defineTipoCliente}" update="tipoDoc cnpjcpfm" 
+                                event="change" />
+                    </p:selectOneRadio>
+                </h:panelGroup>
+
+                <p:outputLabel id="tipoDoc" value="#{cadastroClienteBean.cnpjcpf}" for="cnpjcpfm" />
+                <p:inputMask id="cnpjcpfm" value="#{cadastroClienteBean.cliente.documentoReceitaFederal}" 
+                             mask="#{cadastroClienteBean.mascara}" />                
+
+                <p:outputLabel value="Email" for="email" />
+                <p:inputText id="email" maxlength="60" size="60"
+                             value="#{cadastroClienteBean.cliente.email}"/>
+
+            </p:panelGrid>
+
+            <p:commandButton value="Adicionar endereço" style="margin-top: 20px" 
+                             onclick="inclusaoEnderecoDialog.show();
+                                     return false;" 
+                             disabled="#{not seguranca.excluirClientePermitido}">
+
+            </p:commandButton> 
+
+            <p:dataTable id="enderecosTable" value="#{cadastroClienteBean.cliente.enderecos}" var="enderecos"
+                         style="margin-top: 20px" emptyMessage="Nenhum endereco encontrado" rows="20"
+                         paginator="true" paginatorAlwaysVisible="false" paginatorPosition="bottom" >
+                <p:column headerText="Logradouro">
+                    <h:outputText value="#{enderecos.logradouro}" id="Logradouro" />    	       	   
+                </p:column> 
+
+                <p:column headerText="Número">
+                    <h:outputText value="#{enderecos.numero}" id="Numero" />
+                </p:column>
+
+                <p:column headerText="complemento">
+                    <h:outputText value="#{enderecos.complemento}" id="Complemento"/>
+                </p:column>
+
+                <p:column headerText="CEP">
+                    <h:outputText value="#{enderecos.cep}" id="CEP"/>
+                </p:column>
+
+                <p:column headerText="Cidade/UF">
+                    <h:outputText value="#{enderecos.cidade}/ #{enderecos.uf}" id="Cidadde_UF"/>
+                </p:column>
+
+                <p:column style="text-align: center; width: 50px">
+                    <p:commandButton  icon="ui-icon-pencil" title="Editar" oncomplete="inclusaoEnderecoDialog.show()"
+                                      process="@this" update=":frmCliente:enderecoDialog">
+
+                        <f:setPropertyActionListener target="#{cadastroClienteBean.endereco}" value="#{enderecos}"/>
+                    </p:commandButton>
+
+                    <p:commandButton icon="ui-icon-trash" title="excluir" oncomplete="confirmacaoExclusaoCliente.show()"
+                                     process="@this" update=":frmCliente:confirmacaoExclusaoDialog"
+                                     disabled="#{not seguranca.excluirClientePermitido}">
+                        <f:setPropertyActionListener target="#{cadastroClienteBean.enderecoSelecionado}" value="#{enderecos}"/>
+                    </p:commandButton>
+
+                </p:column>
+
+            </p:dataTable>
+
+            <p:dialog header="Inclusão de Endereço" 
+                      widgetVar="inclusaoEnderecoDialog" id="enderecoDialog"
+                      modal="true" resizable="false" >
+
+                <p:messages autoUpdate="true"/>
+
+                <h:panelGrid id="panelDialog" columns="2" style="width: 100%; margin-top: 20px"
+                             columnClasses="rotulo, campo">
+                    <p:outputLabel value="Logradouro" />
+                    <p:inputText  size="50"  
+                                  value="#{cadastroClienteBean.endereco.logradouro}"/>
+
+                    <p:outputLabel value="Número" />
+                    <p:inputText   size="5"  value="#{cadastroClienteBean.endereco.numero}"/>	
+
+                    <p:outputLabel value="Complemento" />
+                    <p:inputText    size="50"  value="#{cadastroClienteBean.endereco.complemento}"/>
+
+                    <p:outputLabel value="CEP" />
+                    <p:inputMask mask="99999-999"  
+                                 value="#{cadastroClienteBean.endereco.cep}">
+                    </p:inputMask>
+
+                </h:panelGrid>
+                <h:panelGrid columns="4" style="width: 100%"
+                             columnClasses="rotulo, campo">
+                    <p:outputLabel value="Cidade" />
+                    <p:inputText   size="20" value="#{cadastroClienteBean.endereco.cidade}" />
+
+                    <p:outputLabel value="UF" />
+                    <p:inputText    size="2"  value="#{cadastroClienteBean.endereco.uf}"/>                     
+                </h:panelGrid>		    			     				
+                <p:commandButton value="Incluir"  id="incluirEndereco" 
+                                 action="#{cadastroClienteBean.carregarEnderecoCliente()}"
+                                 disabled="#{not seguranca.excluirClientePermitido}"
+                                 update="@this,  :frmCliente:enderecosTable"/>									
+            </p:dialog>
+
+            <p:confirmDialog header="Exclusão de Cliente" 
+                             message="tem certeza que deseja excluir o endereço 
+                             #{cadastroClienteBean.enderecoSelecionado.logradouro} / 
+                             #{cadastroClienteBean.enderecoSelecionado.numero} ?"
+                             widgetVar="confirmacaoExclusaoCliente" id="confirmacaoExclusaoDialog">
+
+                <p:button value="Não" onclick="confirmacaoExclusaoCliente.hide();
+                        return false;"/>
+
+                <p:commandButton value="Sim" oncomplete="confirmacaoExclusaoCliente.hide();" 
+                                 process="@this" action="#{cadastroClienteBean.excluir}"  
+                                 update=":frmCliente:enderecosTable" > 
+                    <!-- process="@this" processa somente este componente  aqui existia e nao fucnionava nada-->      	    
+                </p:commandButton>
+            </p:confirmDialog>		
+        </h:form>		   
+    </ui:define>
+</ui:composition>
